@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kestrel-7 Control Interface - Expanded</title>
+    <style>
+        :root {
+            --bg-primary: rgba(12, 12, 16, 0.92);
+            --bg-secondary: rgba(22, 24, 32, 0.95);
+            --accent: #ff3344;
+            --accent-glow: rgba(255, 51, 68, 0.5);
+            --text-main: #f0f0f5;
+            --text-muted: #888895;
+            --border: rgba(255, 51, 68, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Consolas, monospace;
+            user-select: none;
+        }
+
+        body {
+            background: transparent;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .menu-container {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            width: 400px;
+            background: var(--bg-primary);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 25px var(--accent-glow);
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .menu-header {
+            background: var(--bg-secondary);
+            padding: 16px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .menu-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1.2px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--accent);
+            padding-left: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .control-label {
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .control-value {
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: bold;
+            min-width: 35px;
+            text-align: right;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2a2a35;
+            transition: .2s;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--text-muted);
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #fff;
+        }
+
+        select {
+            background: #1a1a22;
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        input[type="range"] {
+            width: 130px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="overlay-canvas"></canvas>
+
+    <div class="menu-container" id="menu">
+        <div class="menu-header" id="menu-header">
+            <span>KESTREL-7 // SECTOR 7G</span>
+            <span style="font-size:11px; color:var(--text-muted);">v0.86.0</span>
+        </div>
+        <div class="menu-body">
+            <div class="section-title">Combat Logic</div>
+            <div class="control-group">
+                <span class="control-label">Aim Bot</span>
+                <label class="switch">
+                    <input type="checkbox" id="aimbot-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Aim Target</span>
+                <select id="aim-target">
+                    <option value="head">HEAD</option>
+                    <option value="neck" selected>NECK</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <span class="control-label">FOV Circle</span>
+                <label class="switch">
+                    <input type="checkbox" id="fov-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-group">
+                <span class="control-label">FOV Radius</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="range" id="fov-slider" min="50" max="350" value="120">
+                    <span class="control-value" id="fov-val">120</span>
+                </div>
+            </div>
+
+            <div class="section-title">Visuals (ESP)</div>
+            <div class="control-group">
+                <span class="control-label">ESP Line</span>
+                <label class="switch">
+                    <input type="checkbox" id="esp-line" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Skeleton & Bones</span>
+                <label class="switch">
+                    <input type="checkbox" id="esp-skeleton" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Health Bar</span>
+                <label class="switch">
+                    <input type="checkbox" id="esp-health" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('overlay-canvas');
+        const ctx = canvas.getContext('2d');
+        const fovSlider = document.getElementById('fov-slider');
+        const fovVal = document.getElementById('fov-val');
+
+        fovSlider.addEventListener('input', (e) => {
+            fovVal.innerText = e.target.value;
+        });
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const menu = document.getElementById('menu');
+        const header = document.getElementById('menu-header');
+        let isDragging = false, startX, startY;
+
+        header.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - menu.offsetLeft;
+            startY = e.clientY - menu.offsetTop;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            menu.style.left = `${e.clientX - startX}px`;
+            menu.style.top = `${e.clientY - startY}px`;
+        });
+
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        function drawOverlay() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const currentFov = parseInt(fovSlider.value);
+
+            if (document.getElementById('fov-toggle').checked) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, currentFov, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 51, 68, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(drawOverlay);
+        }
+
+        requestAnimationFrame(drawOverlay);
+    </script>
+</body>
+</html>
